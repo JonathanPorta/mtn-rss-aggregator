@@ -96,13 +96,14 @@ var fs    = require('fs');
 
 function compareArticle(subj, comp){
 console.log("compareArticle");
-	var a = "./a1.txt";
-	var b = "./b1.txt";
+	var a = "a1.txt";
+	var b = "b1.txt";
+	var cwd = "./temp/";
 
-	fs.writeFileSync(a, strip_tags(subj.description).replace(/\./g,"\n"));
-	fs.writeFileSync(b, strip_tags(comp.description).replace(/\./g,"\n"));
+	fs.writeFileSync(cwd+a, try_to_sanitize(subj.description));
+	fs.writeFileSync(cwd+b, try_to_sanitize(comp.description));
 
-	var ls    = spawn('./diff.sh', [a, b]);
+	var ls    = spawn('./diff.sh', [a, b, cwd]);
 
 	ls.stdout.on('data', function (data) {
 	  console.log('stdout: ' + data);
@@ -115,6 +116,14 @@ console.log("compareArticle");
 	ls.on('close', function (code) {
 	  console.log('child process exited with code ' + code);
 	});
+}
+
+function try_to_sanitize(string){
+	string = strip_tags(string, "<br><br/><p></p>");
+	string = string.replace(/<\//g,"\n</");
+	string = string.replace(/\/>/g, "/>\n");
+	string = strip_tags(string);
+	return string;
 }
 
 function strip_tags (input, allowed) {

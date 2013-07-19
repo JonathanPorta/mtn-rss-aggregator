@@ -1,18 +1,21 @@
 #! /bin/sh
 
-ARTICLE1=$1
-ARTICLE2=$2
+CWD=$3
+ARTICLE1="$CWD$1"
+ARTICLE2="$CWD$2"
+ARTICLE1TEMP="$CWD$1.tempa"
+ARTICLE2TEMP="$CWD$2.tempb"
 
-sort $ARTICLE1 > temp1
-sort $ARTICLE2 > temp2
+sort -u $ARTICLE1 > $ARTICLE1TEMP
+sort -u $ARTICLE2 > $ARTICLE2TEMP
 
-sed -i 's/^ *//; s/ *$//; /^$/d' temp1
-sed -i 's/^ *//; s/ *$//; /^$/d' temp2
+sed -i 's/^ *//; s/ *$//; /^$/d' $ARTICLE1TEMP
+sed -i 's/^ *//; s/ *$//; /^$/d' $ARTICLE2TEMP
 
 ARTICLE1LINES=`cat temp1 | wc -l `
 ARTICLE2LINES=`cat temp2 | wc -l`
 
-DIFFLINES=`sdiff -B -b -s temp1 temp2 | wc -l`
+DIFFLINES=`sdiff -B -b -s $ARTICLE1TEMP $ARTICLE2TEMP | wc -l`
 
 TOTAL=$(echo "$ARTICLE1LINES + $ARTICLE2LINES" | bc -l)
 NOTCHANGED=$(echo "$TOTAL - $DIFFLINES" | bc -l)
