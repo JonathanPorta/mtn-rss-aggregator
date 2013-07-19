@@ -12,8 +12,8 @@ sort -u $ARTICLE2 > $ARTICLE2TEMP
 sed -i 's/^ *//; s/ *$//; /^$/d' $ARTICLE1TEMP
 sed -i 's/^ *//; s/ *$//; /^$/d' $ARTICLE2TEMP
 
-ARTICLE1LINES=`cat temp1 | wc -l `
-ARTICLE2LINES=`cat temp2 | wc -l`
+ARTICLE1LINES=`cat $ARTICLE1TEMP | wc -l `
+ARTICLE2LINES=`cat $ARTICLE2TEMP | wc -l`
 
 DIFFLINES=`sdiff -B -b -s $ARTICLE1TEMP $ARTICLE2TEMP | wc -l`
 
