@@ -1,0 +1,15 @@
+<html>
+	<head>
+		<link rel="stylesheet" href="http://dev.jonathanporta.com/node-rss/reset.css" />
+		<link rel="stylesheet" href="http://dev.jonathanporta.com/node-rss/node.css" />
+		<script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+		<script src="http://dev.jonathanporta.com/node-rss/node.js"></script>
+	</head>
+	<body>
+		<ul>
+			{{#items}}
+				<li><a target='_blank' title='{{title}}' href='{{link}}'>{{title}}</a></li>
+			{{/items}}
+		</ul>
+	</body>
+</html>
