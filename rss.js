@@ -40,10 +40,21 @@ http.createServer(function (req, res) {
 	{
 		var items = [];
 		for(var dd in _data[req.url])
+		{
+			if(!dd.hasOwnProperty("matches"))
+				dd['matches'] = [];
+			_data[req.url][dd]['viewDate'] = _data[req.url][dd]['date'].toLocaleDateString();
 			items.push(_data[req.url][dd]);
+		}
 
 		fs.readFile(template, function(err, page) {
 			res.writeHead(200, {'Content-Type': 'text/html'});
+			items.sort(function(a,b){
+				if (a.date.getTime() > b.date.getTime()) return -1;
+				if (a.date.getTime() < b.date.getTime()) return 1;
+				return 0;
+			});
+
 			page = page.toString();
 			res.write(mustache.to_html(page, {"items" : items}));
 			res.end()
@@ -51,7 +62,12 @@ http.createServer(function (req, res) {
 	}
 	else if(req.url == "/compare")
 	{
-		compareArticle(_data['/ktvq']['http://www.ktvq.com/news/bannack-state-park-closed-due-to-mudslide/'], _data['/kbzk']['http://www.kbzk.com/news/flood-rips-through-bannack-upcoming-celebration-cancelled/']);
+		//compareArticle(_data['/ktvq']['http://www.ktvq.com/news/bannack-state-park-closed-due-to-mudslide/'], _data['/kbzk']['http://www.kbzk.com/news/flood-rips-through-bannack-upcoming-celebration-cancelled/']);
+		runComparison("/ktvq");
+	}
+	else if(req.url == "/refresh")
+	{
+		buildStore();
 	}
 	else
 	{
@@ -65,7 +81,14 @@ function buildStore(){
 	for(var station in urls)
 	{
 		getRss(station, urls[station], function(name, item){
+			var matches = [];
+			if(_data[name].hasOwnProperty(item.link))
+			{
+				if(_data[name][item.link].hasOwnProperty('matches'))
+					matches = _data[name][item.link]['matches'];
+			}	
 			_data[name][item.link] = item;
+			_data[name][item.link]['matches'] = matches;
 		});
 	}
 }
@@ -93,29 +116,99 @@ console.log('===== %s =====', meta.title);
 
 var spawn = require('child_process').spawn;
 var fs    = require('fs');
+var sha1  = require('sha1');
+var _comparisonQueue = [];
+var _currentComparison = null;
+var _hashes = {};
+var cwd = "./temp/";
+
+function runComparison(mainFeed){
+	console.log("Preparing to run comparisons for " + mainFeed);
+	if(_data.hasOwnProperty(mainFeed))
+	{	
+		var mainItems = _data[mainFeed];
+		for(var mainItem in mainItems)
+		{
+			for(var otherFeed in _data)
+			{
+				if(otherFeed == mainFeed)
+					continue;
+				var otherItems = _data[otherFeed];
+				for(var otherItem in otherItems)
+				{
+					compareArticle(_data[mainFeed][mainItem], _data[otherFeed][otherItem]);
+				}
+			}
+		}
+	}
+}
 
 function compareArticle(subj, comp){
-console.log("compareArticle");
-	var a = "a1.txt";
-	var b = "b1.txt";
-	var cwd = "./temp/";
+//console.log("compareArticle");
+	var h1 = sha1(subj.link + comp.link);
+	var h2 = sha1(comp.link + subj.link);
+	if(!_hashes.hasOwnProperty(h1) && !_hashes.hasOwnProperty(h2))
+	{
+		_comparisonQueue.push({"subj":subj, "comp":comp});
+		_hashes[h1] = true;
+		_hashes[h2] = true;
+		doCompare();
+	}
+	else
+	{
+		console.log("Already in Queue!");
+	}
+}
 
-	fs.writeFileSync(cwd+a, try_to_sanitize(subj.description));
-	fs.writeFileSync(cwd+b, try_to_sanitize(comp.description));
+function doCompare(){
+console.log(_comparisonQueue.length + " items in queue.");
+	if(!_currentComparison && _comparisonQueue.length > 0)
+	{	//queue should be free
+		_currentComparison = _comparisonQueue.pop();
+		var hash = sha1(_currentComparison.subj.link + _currentComparison.comp.link);
+		var a = hash + ".subj";
+		var b = hash + ".comp";
 
-	var ls    = spawn('./diff.sh', [a, b, cwd]);
+		if(!_currentComparison.subj.hasOwnProperty("matches"))
+			_currentComparison.subj['matches'] = [];
 
-	ls.stdout.on('data', function (data) {
-	  console.log('stdout: ' + data);
-	});
+		if(!_currentComparison.comp.hasOwnProperty("matches"))
+			_currentComparison.comp['matches'] = [];
 
-	ls.stderr.on('data', function (data) {
-	  console.log('stderr: ' + data);
-	});
+		fs.writeFileSync(cwd+a, try_to_sanitize(_currentComparison.subj.description));
+		fs.writeFileSync(cwd+b, try_to_sanitize(_currentComparison.comp.description));
 
-	ls.on('close', function (code) {
-	  console.log('child process exited with code ' + code);
-	});
+		var ls = spawn('./diff.sh', [a, b, cwd, hash]);
+
+		ls.stdout.on('data', function (data) {
+			//console.log("Raw Output: " + data);
+			var rounded = (Math.round(data*10000)/10000);
+			//console.log("Rounded: " + rounded);
+			if(rounded > .5)
+			{
+				_currentComparison.subj['matches'].push(_currentComparison.comp);
+				_currentComparison.comp['matches'].push(_currentComparison.subj);
+			}
+//		  console.log('stdout: ' + data);
+//		  _currentComparison.subj
+  		  _currentComparison = null;
+		  doCompare();
+
+		});
+
+		ls.stderr.on('data', function (data) {
+		  console.log('stderr: ' + data);
+//  		  _currentComparison = null;
+//		  doCompare();
+		});
+
+		ls.on('close', function (code) {
+		  //console.log('child process exited with code ' + code);
+		  //console.log('Advancing queue');
+//  		  _currentComparison = null;
+//		  doCompare();
+		});
+	}
 }
 
 function try_to_sanitize(string){

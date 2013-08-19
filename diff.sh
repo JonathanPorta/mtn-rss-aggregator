@@ -3,8 +3,9 @@
 CWD=$3
 ARTICLE1="$CWD$1"
 ARTICLE2="$CWD$2"
-ARTICLE1TEMP="$CWD$1.tempa"
-ARTICLE2TEMP="$CWD$2.tempb"
+ARTICLE1TEMP="$ARTICLE1.temp"
+ARTICLE2TEMP="$ARTICLE2.temp"
+HASH=$4
 
 sort -u $ARTICLE1 > $ARTICLE1TEMP
 sort -u $ARTICLE2 > $ARTICLE2TEMP
@@ -21,11 +22,11 @@ TOTAL=$(echo "$ARTICLE1LINES + $ARTICLE2LINES" | bc -l)
 NOTCHANGED=$(echo "$TOTAL - $DIFFLINES" | bc -l)
 PERCENT=$(echo "$NOTCHANGED / $TOTAL" | bc -l)
 
-echo "a1: $ARTICLE1LINES"
-echo "a2: $ARTICLE2LINES"
-echo "total=$TOTAL"
+#echo "a1: $ARTICLE1LINES"
+#echo "a2: $ARTICLE2LINES"
+#echo "total=$TOTAL"
 
-echo "diff: $DIFFLINES"
+#echo "diff: $DIFFLINES"
 
-echo "percent: $PERCENT"
-
+#echo "{'$HASH' : '$PERCENT'}"
+echo $PERCENT
