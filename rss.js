@@ -5,7 +5,7 @@ var request = require('request');
 var http = require('http');
 var mustache = require('mustache');
 var fs = require('fs');
-
+var queryString = require('querystring');
 var template = "./views/index.mustache";
 
 var urls = {
@@ -36,36 +36,62 @@ console.log("Rebuilding Store.")
 }, 300000);
 
 http.createServer(function (req, res) {
-	if(urls.hasOwnProperty(req.url))
+
+
+var query = queryString.parse(req.url);
+
+	var requestUrl = "";
+	var json = false;
+
+//	query.query = query.query || {};
+	if(query.hasOwnProperty("/?store"))
+	{
+		requestUrl = "/"+query['/?store'];
+		json = true;
+	}
+	else
+	{
+		requestUrl = req.url;
+	}
+
+	if(urls.hasOwnProperty(requestUrl))
 	{
 		var items = [];
-		for(var dd in _data[req.url])
+		for(var dd in _data[requestUrl])
 		{
 			if(!dd.hasOwnProperty("matches"))
 				dd['matches'] = [];
-			_data[req.url][dd]['viewDate'] = _data[req.url][dd]['date'].toLocaleDateString();
-			items.push(_data[req.url][dd]);
+			_data[requestUrl][dd]['viewDate'] = _data[requestUrl][dd]['date'].toLocaleDateString();
+			items.push(_data[requestUrl][dd]);
 		}
 
-		fs.readFile(template, function(err, page) {
-			res.writeHead(200, {'Content-Type': 'text/html'});
-			items.sort(function(a,b){
-				if (a.date.getTime() > b.date.getTime()) return -1;
-				if (a.date.getTime() < b.date.getTime()) return 1;
-				return 0;
-			});
+                items.sort(function(a,b){
+                	if (a.date.getTime() > b.date.getTime()) return -1;
+                	if (a.date.getTime() < b.date.getTime()) return 1;
+                	return 0;
+                });
 
-			page = page.toString();
-			res.write(mustache.to_html(page, {"items" : items}));
-			res.end()
-		});
+		if(json)
+		{
+			res.write(JSON.stringify(items));
+			res.end();
+		}
+		else
+		{
+			fs.readFile(template, function(err, page) {
+				res.writeHead(200, {'Content-Type': 'text/html'});
+				page = page.toString();
+				res.write(mustache.to_html(page, {"items" : items}));
+				res.end()
+			});
+		}
 	}
-	else if(req.url == "/compare")
+	else if(requestUrl == "/compare")
 	{
 		//compareArticle(_data['/ktvq']['http://www.ktvq.com/news/bannack-state-park-closed-due-to-mudslide/'], _data['/kbzk']['http://www.kbzk.com/news/flood-rips-through-bannack-upcoming-celebration-cancelled/']);
 		runComparison("/ktvq");
 	}
-	else if(req.url == "/refresh")
+	else if(requestUrl == "/refresh")
 	{
 		buildStore();
 	}
