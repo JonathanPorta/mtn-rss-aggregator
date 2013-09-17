@@ -28,6 +28,8 @@ var _data = {
 	'/krtv'  : {}
 }
 
+var socket_out;
+
 buildStore();
 
 setInterval(function(){
@@ -37,8 +39,7 @@ console.log("Rebuilding Store.")
 
 http.createServer(function (req, res) {
 
-
-var query = queryString.parse(req.url);
+	var query = queryString.parse(req.url);
 
 	var requestUrl = "";
 	var json = false;
@@ -103,6 +104,17 @@ var query = queryString.parse(req.url);
 }).listen(1337, 'dev.rurd4me.com');
 
 
+var io = require('socket.io').listen(1336);
+
+io.sockets.on('connection', function (socket) {
+  socket_out = socket;
+  socket.emit('news', { hello: 'world' });
+  socket.on('my other event', function (data) {
+    console.log(data);
+  });
+});
+
+
 function buildStore(){
 	for(var station in urls)
 	{
@@ -113,6 +125,13 @@ function buildStore(){
 				if(_data[name][item.link].hasOwnProperty('matches'))
 					matches = _data[name][item.link]['matches'];
 			}	
+			else
+			{
+				if(socket_out)
+				{
+					socket_out.emit("new", item);
+				}
+			}
 			_data[name][item.link] = item;
 			_data[name][item.link]['matches'] = matches;
 		});
