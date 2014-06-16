@@ -9,13 +9,13 @@ var queryString = require('querystring');
 var template = "./views/index.mustache";
 
 var urls = {
-	'/ktvq'  : "http://ktvq.com/rss",
-	'/kxlh'  : "http://www.kxlh.com/rss",
-	'/kxlf'  : "http://www.kxlf.com/rss",
-	'/kaj18' : "http://www.kaj18.com/rss",
-	'/kbzk'  : "http://www.kbzk.com/rss",
-	'/kpax'  : "http://www.kpax.com/rss",
-	'/krtv'  : "http://www.krtv.com/rss"
+	'/ktvq'  : "http://www1.ktvq.com/rss",
+	'/kxlh'  : "http://www1.kxlh.com/rss",
+	'/kxlf'  : "http://www1.kxlf.com/rss",
+	'/kaj18' : "http://www1.kaj18.com/rss",
+	'/kbzk'  : "http://www1.kbzk.com/rss",
+	'/kpax'  : "http://www1.kpax.com/rss",
+	'/krtv'  : "http://www1.krtv.com/rss"
 };
 
 var _data = {
